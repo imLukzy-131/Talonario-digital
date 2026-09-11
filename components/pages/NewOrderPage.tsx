@@ -119,6 +119,7 @@ export default function NewOrderPage({ onBack }: NewOrderPageProps) {
     const orders = loadOrdersFromStorage();
     const orderWithStatus = {
       ...formData,
+      servicioSolicitado: formData.tipoEquipo || 'Reparación General', 
       status: 'Pendiente',
       createdAt: new Date().toISOString(),
       recibidoPor: currentUser.nombre,
