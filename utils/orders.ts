@@ -9,6 +9,8 @@ export const getStatusColor = (status: string): string => {
     case 'En diagnóstico':
     case 'Esperando repuesto':
       return 'bg-yellow-500/20 text-yellow-400';
+    case 'Esperando confirmación':
+      return 'bg-amber-500/10 text-amber-400 border border-amber-500/30';
     case 'En reparación':
       return 'bg-blue-500/20 text-blue-400';
     case 'Pendiente':

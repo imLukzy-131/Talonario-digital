@@ -1,5 +1,6 @@
 import { X, Clock3, PackageCheck, Wrench } from 'lucide-react';
 import { Order } from '@/types/index';
+import { getStatusColor } from '@/utils/orders';
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -42,7 +43,7 @@ export default function OrderDetailsModal({ order, onClose }: OrderDetailsModalP
             <div className="sm:col-span-2"><p className="text-slate-400">Observaciones</p><p className="text-white">{order.observaciones || 'Sin observaciones'}</p></div>
             <div className="sm:col-span-2"><p className="text-slate-400">Accesorios entregados</p><p className="text-white">{order.accesoriosEntregados || 'Sin accesorios'}</p></div>
             {showsCharger && <div><p className="text-slate-400">Incluye cargador</p><p className="text-white">{order.incluyeCargador ? 'Sí' : 'No'}</p></div>}
-            <div><p className="text-slate-400">Estado actual</p><p className="text-cyan-300 font-semibold">{order.status}</p></div>
+            <div><p className="text-slate-400">Estado actual</p><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(order.status)}`}>{order.status}</span></div>
           </div>
         </section>
 
