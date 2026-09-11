@@ -238,6 +238,7 @@ function createMovement(
     proveedor?: string;
     fechaRemito?: string;
     cliente?: string;
+    numeroOrden?: string;
     razonAjuste?: RazonAjuste;
   }
 ): StockMovement {
@@ -347,6 +348,24 @@ export function registerSale(
     usuarioNombre
   );
   
+  return { movement, product: updatedProduct };
+}
+
+export function registerOrderPart(
+  codigoBarras: string,
+  cantidad: number,
+  numeroOrden: string,
+  usuarioId: string,
+  usuarioNombre: string
+): { movement: StockMovement; product: Product } {
+  const product = getProductByCode(codigoBarras);
+  if (!product) throw new Error(`Producto con código ${codigoBarras} no encontrado`);
+  if (!Number.isInteger(cantidad) || cantidad <= 0) throw new Error('La cantidad debe ser un entero mayor a 0');
+  if (product.stockActual < cantidad) throw new Error(`Stock insuficiente. Disponible: ${product.stockActual}`);
+
+  const movement = createMovement('venta', product, cantidad, usuarioId, usuarioNombre,
+    `Repuesto utilizado en la orden ${numeroOrden}`, { cliente: `Orden ${numeroOrden}`, numeroOrden });
+  const updatedProduct = updateProduct(product.id, { stockActual: product.stockActual - cantidad }, usuarioNombre);
   return { movement, product: updatedProduct };
 }
 

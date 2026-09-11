@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, CheckCircle, AlertCircle, X, Plus, Minus } from 'lucide-react';
 import { TECHNICAL_STATES } from '@/constants/orderStatus';
-import { Order, HistorialEntry, Service } from '@/types/index';
+import { Order, HistorialEntry, Service, Product, UsedPart } from '@/types/index';
+import * as stockService from '@/utils/stockService';
 import { canEditTracking, getCurrentUser } from '@/utils/permissions';
 import { getActiveServices } from '@/utils/services';
 import { loadOrdersFromStorage, saveOrdersToStorage, sortOrdersByDate } from '@/utils/storage';
@@ -24,6 +25,10 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
   const [newServiciosRealizados, setNewServiciosRealizados] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  const [newRepuestosUsados, setNewRepuestosUsados] = useState<UsedPart[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [selectedProductQuantity, setSelectedProductQuantity] = useState('1');
   const currentUser = getCurrentUser();
   const hasTrackingPermission = canEditTracking(currentUser);
 
@@ -37,6 +42,7 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
     // Cargar servicios disponibles
     const services = getActiveServices();
     setAvailableServices(services);
+    setAvailableProducts(stockService.getProducts());
   }, []);
 
   const handleSelectOrder = (order: Order) => {
@@ -45,6 +51,9 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
     setNewObservation('');
     setNewPrecioFinal(order.precioFinal?.toString() || '');
     setNewServiciosRealizados(order.serviciosRealizados || []);
+    setNewRepuestosUsados(order.repuestosUsados || []);
+    setSelectedProductId('');
+    setSelectedProductQuantity('1');
     setErrorMessage(null);
     setShowModal(true);
   };
@@ -73,6 +82,35 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
     setNewPrecioFinal(totalPrice.toFixed(2));
   };
 
+  const handleAddPart = () => {
+    const product = availableProducts.find((item) => item.id === selectedProductId);
+    const quantity = Number(selectedProductQuantity);
+    if (!product || !Number.isInteger(quantity) || quantity <= 0) {
+      setErrorMessage('Seleccione un repuesto y una cantidad entera válida');
+      return;
+    }
+    const existing = newRepuestosUsados.find((part) => part.productId === product.id);
+    const totalQuantity = (existing?.cantidad || 0) + quantity;
+    if (totalQuantity > product.stockActual) {
+      setErrorMessage(`Stock insuficiente para ${product.descripcion}. Disponible: ${product.stockActual}`);
+      return;
+    }
+    const nextPart: UsedPart = {
+      productId: product.id,
+      codigoBarras: product.codigoBarras,
+      descripcion: product.descripcion,
+      cantidad: totalQuantity,
+      costoUnitario: 0,
+      costoTotal: 0,
+    };
+    setNewRepuestosUsados(existing
+      ? newRepuestosUsados.map((part) => part.productId === product.id ? nextPart : part)
+      : [...newRepuestosUsados, nextPart]);
+    setSelectedProductId('');
+    setSelectedProductQuantity('1');
+    setErrorMessage(null);
+  };
+
   const handleUpdateTracking = () => {
     if (!selectedOrder) return;
 
@@ -92,6 +130,21 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
       }
     }
 
+    try {
+      const previousParts = selectedOrder.repuestosUsados || [];
+      for (const part of newRepuestosUsados) {
+        const previousQuantity = previousParts.find((item) => item.productId === part.productId)?.cantidad || 0;
+        const quantityToConsume = part.cantidad - previousQuantity;
+        if (quantityToConsume > 0) {
+          stockService.registerOrderPart(part.codigoBarras, quantityToConsume, selectedOrder.numeroOrden, currentUser.id, currentUser.nombre);
+        }
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'No se pudo descontar el repuesto');
+      setAvailableProducts(stockService.getProducts());
+      return;
+    }
+
     const updatedOrders = orders.map(order => {
       if (order.numeroOrden === selectedOrder.numeroOrden) {
         const historial = order.historial || [];
@@ -108,6 +161,7 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
           tecnicoAsignado: currentUser.nombre,
           precioFinal: newPrecioFinal ? parseFloat(newPrecioFinal) : order.precioFinal,
           serviciosRealizados: newServiciosRealizados,
+          repuestosUsados: newRepuestosUsados,
           historial: [...historial, newEntry],
         };
       }
@@ -121,6 +175,10 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
     setNewObservation('');
     setNewPrecioFinal('');
     setNewServiciosRealizados([]);
+    setNewRepuestosUsados([]);
+    setSelectedProductId('');
+    setSelectedProductQuantity('1');
+    setAvailableProducts(stockService.getProducts());
     setErrorMessage(null);
     setSelectedOrder(null);
     console.log('[v0] Seguimiento técnico actualizado');
@@ -459,6 +517,32 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
                 {newState === 'Completado' && (
                   <p className="text-xs text-yellow-400">Requerido para completar la orden</p>
                 )}
+              </div>
+
+              {/* Repuestos utilizados */}
+              <div>
+                <label className="block text-sm font-semibold text-cyan-400 mb-2">Repuestos utilizados</label>
+                <div className="flex gap-2 mb-3">
+                  <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm">
+                    <option value="">+ Agregar repuesto</option>
+                    {availableProducts.filter((product) => product.stockActual > 0).map((product) => (
+                      <option key={product.id} value={product.id}>{product.descripcion} ({product.stockActual} disponibles)</option>
+                    ))}
+                  </select>
+                  <input type="number" min="1" step="1" value={selectedProductQuantity} onChange={(e) => setSelectedProductQuantity(e.target.value)} className="w-20 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" aria-label="Cantidad de repuesto" />
+                  <button type="button" onClick={handleAddPart} className="px-3 py-2 rounded-lg border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10">Agregar</button>
+                </div>
+                {newRepuestosUsados.length > 0 && (
+                  <div className="flex flex-col gap-2">
+                    {newRepuestosUsados.map((part) => (
+                      <div key={part.productId} className="flex items-center justify-between rounded-lg border border-slate-600 bg-slate-900/40 px-3 py-2 text-sm">
+                        <span className="text-slate-200">{part.descripcion}</span>
+                        <span className="text-cyan-300">x{part.cantidad}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-slate-400 mt-2">El stock se descuenta al guardar y queda asociado a esta orden.</p>
               </div>
 
               {/* Información automática */}
