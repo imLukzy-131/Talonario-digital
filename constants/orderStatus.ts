@@ -2,6 +2,7 @@
 export const TECHNICAL_STATES = [
   'Pendiente',
   'En diagnóstico',
+  'Esperando confirmación',
   'Esperando repuesto',
   'En reparación',
   'Completado',
@@ -11,6 +12,7 @@ export const TECHNICAL_STATES = [
 export const ORDER_STATUSES = [
   'Pendiente',
   'En diagnóstico',
+  'Esperando confirmación',
   'Esperando repuesto',
   'En reparación',
   'Completado',

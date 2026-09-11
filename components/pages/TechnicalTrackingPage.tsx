@@ -134,6 +134,8 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
       case 'Esperando repuesto':
       case 'En diagnóstico':
         return 'yellow';
+      case 'Esperando confirmación':
+        return 'amber';
       case 'En reparación':
         return 'blue';
       case 'Pendiente':
@@ -212,6 +214,8 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
                           ? 'text-yellow-400'
                           : statusColor === 'blue'
                           ? 'text-blue-400'
+                          : statusColor === 'amber'
+                          ? 'text-amber-400'
                           : 'text-slate-400'
                       }`}
                     />
@@ -228,6 +232,8 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
                             ? 'bg-yellow-500/20 text-yellow-400'
                             : statusColor === 'blue'
                             ? 'bg-blue-500/20 text-blue-400'
+                            : statusColor === 'amber'
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                             : 'bg-slate-500/20 text-slate-400'
                         }`}
                       >
@@ -250,6 +256,8 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
                               ? 'from-yellow-500 to-yellow-600'
                               : statusColor === 'blue'
                               ? 'from-blue-500 to-cyan-500'
+                              : statusColor === 'amber'
+                              ? 'from-amber-500 to-orange-500'
                               : 'from-slate-500 to-slate-600'
                           }`}
                           style={{ width: `${progress}%` }}
