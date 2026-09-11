@@ -26,12 +26,12 @@ export function OrderSearchForm({ onSearch, isLoading = false }: OrderSearchForm
         placeholder="Ej. 00001"
         inputMode="numeric"
         autoComplete="off"
-        className="h-14 min-w-0 flex-1 rounded-xl border border-border bg-background/70 px-5 text-base text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+        className="min-w-0 flex-1 rounded-lg border border-slate-600 bg-slate-700/50 px-4 py-3 text-white placeholder-slate-400 focus:border-cyan-500 focus:outline-none"
       />
       <button
         type="submit"
         disabled={isLoading}
-        className="inline-flex h-14 items-center justify-center gap-2 rounded-xl bg-primary px-6 font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3 font-semibold text-white transition-all duration-200 hover:from-cyan-600 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-60 neon-glow"
       >
         <Search aria-hidden="true" className="size-5" />
         {isLoading ? 'Buscando...' : 'Consultar orden'}

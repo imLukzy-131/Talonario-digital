@@ -36,8 +36,8 @@ export function ClientOrderView({ order }: ClientOrderViewProps) {
   const displayStatus = publicStatus(order.status)
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card/80 shadow-2xl shadow-black/20">
-      <header className="flex flex-col gap-5 border-b border-border p-6 sm:flex-row sm:items-start sm:justify-between sm:p-8">
+    <article className="overflow-hidden rounded-lg border border-slate-700 bg-slate-800/40 p-8 neon-border">
+      <header className="flex flex-col gap-5 border-b border-slate-700 p-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="font-mono text-sm text-muted-foreground">Orden de reparación</p>
           <h2 className="mt-1 text-3xl font-bold tracking-tight text-foreground">#{order.numeroOrden}</h2>
@@ -48,7 +48,7 @@ export function ClientOrderView({ order }: ClientOrderViewProps) {
         </Badge>
       </header>
 
-      <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_1.15fr]">
+      <div className="grid gap-8 pt-8 lg:grid-cols-[1fr_1.15fr]">
         <div className="flex flex-col gap-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
             <div className="rounded-xl border border-border bg-background/40 p-4">
@@ -75,13 +75,13 @@ export function ClientOrderView({ order }: ClientOrderViewProps) {
         <section aria-labelledby="timeline-title">
           <h3 id="timeline-title" className="mb-5 font-semibold text-foreground">Historial del equipo</h3>
           {history.length > 0 ? (
-            <ol className="relative ml-2 border-l border-border">
+            <ol className="relative ml-2 space-y-4 border-l-2 border-cyan-500/50 pl-6">
               {history.map((entry, index) => (
-                <li key={`${entry.fecha}-${entry.estado}-${index}`} className="relative ml-6 pb-7 last:pb-0">
-                  <span className="absolute -left-[31px] top-0 size-3 rounded-full border-2 border-card bg-primary" />
-                  <p className="text-xs text-muted-foreground">{formatDate(entry.fecha)}</p>
-                  <p className="mt-1 font-medium text-foreground">{publicStatus(entry.estado)}</p>
-                  <p className="mt-1 text-sm leading-5 text-muted-foreground">{entry.detalle}</p>
+                <li key={`${entry.fecha}-${entry.estado}-${index}`} className="relative">
+                  <span className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full bg-cyan-400" />
+                  <p className="text-cyan-300 text-xs">{formatDate(entry.fecha)}</p>
+                  <p className="mt-1 font-semibold text-white">{publicStatus(entry.estado)}</p>
+                  <p className="mt-1 text-sm leading-5 text-slate-400">{entry.detalle}</p>
                 </li>
               ))}
             </ol>

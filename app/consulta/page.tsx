@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowLeft, SearchX, Wrench } from 'lucide-react'
+import { SearchX } from 'lucide-react'
 import { OrderSearchForm } from '@/components/public/OrderSearchForm'
 import { ClientOrderView } from '@/components/public/ClientOrderView'
 import { loadOrdersFromStorage } from '@/utils/storage'
@@ -40,41 +40,31 @@ export default function ConsultaPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-5 py-8 sm:px-8 sm:py-12">
-        <a href="/" className="mb-14 inline-flex w-fit items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground">
-          <ArrowLeft aria-hidden="true" className="size-4" /> Volver al inicio
-        </a>
+    <main className="w-full min-h-screen p-8 flex items-center justify-center bg-slate-900 text-white">
+      <div className="max-w-6xl w-full">
+        <header className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">Consulta de Estado de Equipo</span>
+          </h1>
+          <p className="text-slate-400 text-lg">Ingrese su número de orden para realizar el seguimiento en tiempo real</p>
+        </header>
 
-        <div className="mx-auto w-full max-w-3xl">
-          <header className="mb-10 text-center">
-            <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-              <Wrench aria-hidden="true" className="size-7" />
+        <section className="bg-slate-800/40 border border-slate-700 rounded-lg p-8 neon-border" aria-label="Buscar orden">
+          <p className="mb-4 text-sm font-semibold text-white">Número de orden</p>
+          <OrderSearchForm onSearch={handleSearch} isLoading={isLoading} />
+          {error && (
+            <div role="alert" className="mt-4 flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+              <SearchX aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              <p>{error}</p>
             </div>
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">JR Computación</p>
-            <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl">Seguimiento de tu equipo</h1>
-            <p className="mx-auto mt-4 max-w-xl text-pretty leading-6 text-muted-foreground">Consultá el estado de tu reparación de forma simple y segura con tu número de orden.</p>
-          </header>
-
-          <section className="rounded-2xl border border-border bg-card/70 p-5 shadow-xl shadow-black/10 sm:p-7" aria-label="Buscar orden">
-            <p className="mb-4 text-sm font-medium text-foreground">Número de orden</p>
-            <OrderSearchForm onSearch={handleSearch} isLoading={isLoading} />
-            {error && (
-              <div role="alert" className="mt-4 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive-foreground">
-                <SearchX aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <p>{error}</p>
-              </div>
-            )}
-          </section>
-
-          {order && <div className="mt-8"><ClientOrderView order={order} /></div>}
-
-          {!order && !error && (
-            <p className="mt-8 text-center text-sm text-muted-foreground">Tu número de orden figura en el comprobante que recibiste al dejar tu equipo.</p>
           )}
-        </div>
+        </section>
 
-        <footer className="mt-auto pt-14 text-center text-xs text-muted-foreground">Información de seguimiento · JR Computación</footer>
+        {order && <div className="mt-8"><ClientOrderView order={order} /></div>}
+
+        {!order && !error && (
+          <p className="mt-8 text-center text-sm text-slate-400">Tu número de orden figura en el comprobante que recibiste al dejar tu equipo.</p>
+        )}
       </div>
     </main>
   )
