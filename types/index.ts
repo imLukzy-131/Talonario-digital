@@ -31,6 +31,15 @@ export interface Service {
 }
 
 // Interfaz de orden de reparación
+export interface UsedPart {
+  productId: string;
+  codigoBarras: string;
+  descripcion: string;
+  cantidad: number;
+  costoUnitario: number;
+  costoTotal: number;
+}
+
 export interface Order {
   numeroOrden: string;
   fecha: string;
@@ -55,6 +64,7 @@ export interface Order {
   fechaEntrega?: string;
   precioFinal?: number;
   serviciosRealizados?: string[];
+  repuestosUsados?: UsedPart[];
 }
 
 // =====================================================
@@ -101,6 +111,7 @@ export interface StockMovement {
   proveedor?: string;      // Solo para entrada
   fechaRemito?: string;    // Solo para entrada (fecha del remito del proveedor)
   cliente?: string;        // Solo para venta
+  numeroOrden?: string;     // Solo para repuestos consumidos en una orden
   razonAjuste?: RazonAjuste; // Solo para ajuste
   observaciones: string;
   // Trazabilidad
