@@ -102,7 +102,14 @@ export default function ListOrdersPage({ onBack }: ListOrdersPageProps) {
         onConfirm={handleDeleteConfirm}
         onCancel={() => setShowDeleteConfirm(null)}
       />
-      <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
+      <OrderDetailsModal
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onOrderUpdated={(updatedOrder) => {
+          updateOrder(updatedOrder);
+          setSelectedOrder(updatedOrder);
+        }}
+      />
       <EditOrderModal
         order={editingOrder}
         onSave={handleEditSave}
