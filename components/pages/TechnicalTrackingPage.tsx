@@ -519,25 +519,100 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
                 )}
               </div>
 
-              {/* Repuestos utilizados */}
+              {/* Repuestos utilizados - Buscador Híbrido Autocomplete */}
               <div>
                 <label className="block text-sm font-semibold text-cyan-400 mb-2">Repuestos utilizados</label>
-                <div className="flex gap-2 mb-3">
-                  <select value={selectedProductId} onChange={(e) => setSelectedProductId(e.target.value)} className="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm">
-                    <option value="">+ Agregar repuesto</option>
-                    {availableProducts.filter((product) => product.stockActual > 0).map((product) => (
-                      <option key={product.id} value={product.id}>{product.descripcion} ({product.stockActual} disponibles)</option>
-                    ))}
-                  </select>
-                  <input type="number" min="1" step="1" value={selectedProductQuantity} onChange={(e) => setSelectedProductQuantity(e.target.value)} className="w-20 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm" aria-label="Cantidad de repuesto" />
-                  <button type="button" onClick={handleAddPart} className="px-3 py-2 rounded-lg border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10">Agregar</button>
+                
+                <div className="relative mb-3 flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={
+                        availableProducts.find((p) => p.id === selectedProductId)?.descripcion || selectedProductId
+                      }
+                      onChange={(e) => {
+                        setSelectedProductId(e.target.value);
+                        if (errorMessage) setErrorMessage(null);
+                      }}
+                      placeholder="Escriba código de barras, descripción, marca o modelo..."
+                      className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:border-cyan-500 focus:outline-none transition-colors"
+                    />
+
+                    {/* Sugerencias desplegables al escribir */}
+                    {selectedProductId && !availableProducts.some((p) => p.id === selectedProductId) && (
+                      <div className="absolute z-30 mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                        {availableProducts
+                          .filter((p) => p.stockActual > 0)
+                          .filter((p) =>
+                            [p.codigoBarras, p.descripcion, p.marca, p.modelo].some((field) =>
+                              (field || '').toLowerCase().includes(selectedProductId.toLowerCase())
+                            )
+                          )
+                          .slice(0, 8)
+                          .map((product) => (
+                            <button
+                              key={product.id}
+                              type="button"
+                              onClick={() => setSelectedProductId(product.id)}
+                              className="w-full text-left px-3 py-2 hover:bg-slate-700 border-b border-slate-700/50 last:border-0 flex justify-between items-center text-xs transition-colors"
+                            >
+                              <div>
+                                <p className="text-white font-medium">{product.descripcion}</p>
+                                <p className="text-slate-400 text-[11px]">
+                                  {product.codigoBarras} · {product.marca} {product.modelo}
+                                </p>
+                              </div>
+                              <span className="text-cyan-400 font-semibold ml-2 whitespace-nowrap">
+                                Stock: {product.stockActual}
+                              </span>
+                            </button>
+                          ))}
+
+                        {availableProducts
+                          .filter((p) => p.stockActual > 0)
+                          .filter((p) =>
+                            [p.codigoBarras, p.descripcion, p.marca, p.modelo].some((field) =>
+                              (field || '').toLowerCase().includes(selectedProductId.toLowerCase())
+                            )
+                          ).length === 0 && (
+                          <p className="p-3 text-xs text-slate-400 text-center">No se encontraron repuestos en stock</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={selectedProductQuantity}
+                    onChange={(e) => setSelectedProductQuantity(e.target.value)}
+                    className="w-20 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm text-center focus:border-cyan-500 focus:outline-none"
+                    aria-label="Cantidad de repuesto"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleAddPart}
+                    className="px-3 py-2 rounded-lg border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 font-medium text-sm transition-colors"
+                  >
+                    Agregar
+                  </button>
                 </div>
+
+                {/* Lista de repuestos cargados a la orden */}
                 {newRepuestosUsados.length > 0 && (
                   <div className="flex flex-col gap-2">
                     {newRepuestosUsados.map((part) => (
-                      <div key={part.productId} className="flex items-center justify-between rounded-lg border border-slate-600 bg-slate-900/40 px-3 py-2 text-sm">
-                        <span className="text-slate-200">{part.descripcion}</span>
-                        <span className="text-cyan-300">x{part.cantidad}</span>
+                      <div
+                        key={part.productId}
+                        className="flex items-center justify-between rounded-lg border border-slate-600 bg-slate-900/40 px-3 py-2 text-sm"
+                      >
+                        <div>
+                          <p className="text-slate-200 font-medium">{part.descripcion}</p>
+                          <p className="text-xs text-slate-400">{part.codigoBarras}</p>
+                        </div>
+                        <span className="text-cyan-300 font-mono font-semibold">x{part.cantidad}</span>
                       </div>
                     ))}
                   </div>
