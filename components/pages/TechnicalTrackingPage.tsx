@@ -98,14 +98,53 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
     setBudgetPartSearch('');
   };
 
-  const handleSendBudget = () => {
-    if (!selectedOrder) return;
-    const detail = [...budgetServices, ...budgetParts.map((part) => `${part.descripcion} x${part.cantidad}`)].join(', ') || 'Diagnóstico técnico';
-    const message = `Hola ${selectedOrder.nombre}! Te contactamos de JR Computación por tu equipo ${selectedOrder.marca} 
-    ${selectedOrder.modelo} Orden #${selectedOrder.numeroOrden}. Presupuesto: ${detail}. 
-      Total: $${budgetTotal.toFixed(2)}. Por favor confirmanos si aprobás el trabajo.`;
-    window.open(`https://wa.me/${selectedOrder.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
-  };
+const handleSendBudget = () => {
+  if (!selectedOrder) return;
+
+  // Emojis codificados en Unicode seguro para evitar caracteres corrompidos ()
+  const WavingHand = '\u{1F44B}'; // 👋
+  const MagnifyingGlass = '\u{1F50D}'; // 🔍
+  const HammerWrench = '\u{1F6E0}\u{FE0F}'; // 🛠️
+  const MoneyBag = '\u{1F4B0}'; // 💰
+  const BulletPoint = '\u{2022}'; // •
+
+  // Detalle de servicios presupuestados
+  const servicesList = budgetServices.length > 0 
+    ? budgetServices.map((s) => `${BulletPoint} ${s}`).join('\n')
+    : '';
+
+  // Detalle de repuestos presupuestados
+  const partsList = budgetParts.length > 0 
+    ? budgetParts.map((part) => `${BulletPoint} ${part.descripcion} (x${part.cantidad})`).join('\n')
+    : '';
+
+  // Unir listas
+  const itemsText = [servicesList, partsList].filter(Boolean).join('\n');
+  const budgetDetail = itemsText || `${BulletPoint} Diagnóstico y revisión técnica`;
+
+  // Construcción del mensaje con saltos de línea claros
+  const message = `Hola ${selectedOrder.nombre}! ${WavingHand}
+Te contactamos de JR Computación respecto a tu equipo ${selectedOrder.tipoEquipo} ${selectedOrder.marca} ${selectedOrder.modelo} 
+Orden Nro#${selectedOrder.numeroOrden}).
+
+${MagnifyingGlass} Diagnóstico Técnico:
+"${newObservation.trim() || 'Diagnóstico preliminar realizado'}"
+
+${HammerWrench} Presupuesto Detallado:
+${budgetDetail}
+
+${MoneyBag} Monto Total: $${budgetTotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+Por favor, confirmanos por este medio si aprobás la reparación para comenzar con el trabajo. ¡Muchas gracias!`;
+
+  // Limpiar número de teléfono
+  const cleanPhone = selectedOrder.telefono.replace(/[^0-9]/g, '');
+
+  // Usar la API oficial de WhatsApp
+  const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+
+  window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+};
 
   const handleApproveBudget = () => {
     setNewServiciosRealizados(budgetServices);
