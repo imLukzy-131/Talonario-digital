@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, CheckCircle, AlertCircle, X, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, AlertCircle, X, Minus, MessageCircle, Ban, ClipboardList } from 'lucide-react';
 import { TECHNICAL_STATES } from '@/constants/orderStatus';
 import { Order, HistorialEntry, Service, Product, UsedPart } from '@/types/index';
 import * as stockService from '@/utils/stockService';
@@ -27,6 +27,9 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
   const [newRepuestosUsados, setNewRepuestosUsados] = useState<UsedPart[]>([]);
+  const [budgetServices, setBudgetServices] = useState<string[]>([]);
+  const [budgetParts, setBudgetParts] = useState<UsedPart[]>([]);
+  const [budgetPartSearch, setBudgetPartSearch] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedProductQuantity, setSelectedProductQuantity] = useState('1');
   const currentUser = getCurrentUser();
@@ -52,6 +55,9 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
     setNewPrecioFinal(order.precioFinal?.toString() || '');
     setNewServiciosRealizados(order.serviciosRealizados || []);
     setNewRepuestosUsados(order.repuestosUsados || []);
+    setBudgetServices(order.serviciosPresupuestados || []);
+    setBudgetParts(order.repuestosPresupuestados || []);
+    setBudgetPartSearch('');
     setSelectedProductId('');
     setSelectedProductQuantity('1');
     setErrorMessage(null);
@@ -80,6 +86,39 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
       return sum + (service?.precioBase || 0);
     }, 0);
     setNewPrecioFinal(totalPrice.toFixed(2));
+  };
+
+  const budgetTotal = budgetServices.reduce((sum, name) => sum + (availableServices.find((service) => service.nombre === name)?.precioBase || 0), 0) + budgetParts.reduce((sum, part) => sum + (part.costoUnitario || 0) * part.cantidad, 0);
+  const isBudgetStage = newState === 'En diagnóstico' || newState === 'Esperando confirmación';
+
+  const handleBudgetPart = (product: Product) => {
+    const existing = budgetParts.find((part) => part.productId === product.id);
+    const nextPart: UsedPart = { productId: product.id, codigoBarras: product.codigoBarras, descripcion: product.descripcion, cantidad: existing?.cantidad || 1, costoUnitario: existing?.costoUnitario || 0, costoTotal: 0 };
+    setBudgetParts(existing ? budgetParts.map((part) => part.productId === product.id ? nextPart : part) : [...budgetParts, nextPart]);
+    setBudgetPartSearch('');
+  };
+
+  const handleSendBudget = () => {
+    if (!selectedOrder) return;
+    const detail = [...budgetServices, ...budgetParts.map((part) => `${part.descripcion} x${part.cantidad}`)].join(', ') || 'Diagnóstico técnico';
+    const message = `Hola ${selectedOrder.nombre}! Te contactamos de JR Computación por tu equipo ${selectedOrder.marca} ${selectedOrder.modelo} (Orden #${selectedOrder.numeroOrden}). Diagnóstico: ${newObservation || selectedOrder.observaciones || selectedOrder.problemaReportado}. Presupuesto: ${detail}. Total: $${budgetTotal.toFixed(2)}. Por favor confirmanos si aprobás el trabajo.`;
+    window.open(`https://wa.me/${selectedOrder.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleApproveBudget = () => {
+    setNewServiciosRealizados(budgetServices);
+    setNewRepuestosUsados(budgetParts);
+    setNewPrecioFinal(budgetTotal.toFixed(2));
+    setNewState('En reparación');
+    setNewObservation('Presupuesto aprobado por el cliente.');
+  };
+
+  const handleRejectBudget = () => {
+    setNewServiciosRealizados(['Diagnóstico/Chequeo']);
+    setNewRepuestosUsados([]);
+    setNewPrecioFinal((availableServices.find((service) => service.nombre === 'Diagnóstico/Chequeo')?.precioBase || 0).toFixed(2));
+    setNewState('Esperando confirmación');
+    setNewObservation('Presupuesto rechazado. Equipo listo para retiro.');
   };
 
   const handleAddPart = () => {
@@ -162,6 +201,9 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
           precioFinal: newPrecioFinal ? parseFloat(newPrecioFinal) : order.precioFinal,
           serviciosRealizados: newServiciosRealizados,
           repuestosUsados: newRepuestosUsados,
+          serviciosPresupuestados: budgetServices,
+          repuestosPresupuestados: budgetParts,
+          montoPresupuestado: budgetTotal,
           historial: [...historial, newEntry],
         };
       }
@@ -176,6 +218,9 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
     setNewPrecioFinal('');
     setNewServiciosRealizados([]);
     setNewRepuestosUsados([]);
+    setBudgetServices([]);
+    setBudgetParts([]);
+    setBudgetPartSearch('');
     setSelectedProductId('');
     setSelectedProductQuantity('1');
     setAvailableProducts(stockService.getProducts());
@@ -619,6 +664,52 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
                 )}
                 <p className="text-xs text-slate-400 mt-2">El stock se descuenta al guardar y queda asociado a esta orden.</p>
               </div>
+
+              {/* Presupuesto vs realizado */}
+              <section className="rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-500/10 via-slate-900/60 to-cyan-500/10 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-purple-500/15 p-2 text-purple-300"><ClipboardList size={20} /></div>
+                    <div>
+                      <h3 className="text-base font-bold text-white">Presupuestado <span className="text-slate-500">vs.</span> realizado</h3>
+                      <p className="text-xs text-slate-400">Carga una propuesta antes de comenzar la reparación.</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] uppercase tracking-wider text-slate-400">Total presupuestado</p>
+                    <p className="text-2xl font-bold text-purple-300">${budgetTotal.toFixed(2)}</p>
+                  </div>
+                </div>
+                {isBudgetStage ? (
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-purple-300">Servicios presupuestados</label>
+                      <div className="flex gap-2">
+                        <select onChange={(e) => { if (e.target.value && !budgetServices.includes(e.target.value)) setBudgetServices([...budgetServices, e.target.value]); e.target.value = ''; }} className="min-w-0 flex-1 rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2 text-sm text-white focus:border-purple-400 focus:outline-none">
+                          <option value="">+ Agregar servicio</option>
+                          {availableServices.map((service) => <option key={service.id} value={service.nombre}>{service.nombre} · ${service.precioBase.toFixed(2)}</option>)}
+                        </select>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {budgetServices.map((name) => <button type="button" key={name} onClick={() => setBudgetServices(budgetServices.filter((item) => item !== name))} className="rounded-full border border-purple-400/30 bg-purple-400/10 px-3 py-1 text-xs text-purple-200 hover:border-red-400/50 hover:text-red-300">{name} ×</button>)}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-purple-300">Repuestos presupuestados</label>
+                      <div className="relative">
+                        <input value={budgetPartSearch} onChange={(e) => setBudgetPartSearch(e.target.value)} placeholder="Buscar por código, nombre o marca..." className="w-full rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-purple-400 focus:outline-none" />
+                        {budgetPartSearch && <div className="absolute z-30 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-600 bg-slate-800 shadow-xl">{availableProducts.filter((product) => product.stockActual > 0 && [product.codigoBarras, product.descripcion, product.marca, product.modelo].some((value) => value.toLowerCase().includes(budgetPartSearch.toLowerCase()))).slice(0, 6).map((product) => <button type="button" key={product.id} onClick={() => handleBudgetPart(product)} className="flex w-full items-center justify-between border-b border-slate-700/60 px-3 py-2 text-left text-xs hover:bg-slate-700"><span><strong className="block text-white">{product.descripcion}</strong><span className="text-slate-400">{product.codigoBarras} · stock {product.stockActual}</span></span><span className="text-purple-300">Agregar</span></button>)}</div>}
+                      </div>
+                      <div className="mt-2 flex flex-col gap-2">{budgetParts.map((part) => <div key={part.productId} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-2 text-xs"><span className="text-slate-200">{part.descripcion} <span className="text-slate-500">×{part.cantidad}</span></span><button type="button" onClick={() => setBudgetParts(budgetParts.filter((item) => item.productId !== part.productId))} className="text-slate-500 hover:text-red-300">Quitar</button></div>)}</div>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <button type="button" onClick={handleSendBudget} className="flex items-center justify-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-[#20bd5a]"><MessageCircle size={16} /> Enviar por WhatsApp</button>
+                      <button type="button" onClick={handleApproveBudget} className="flex items-center justify-center gap-2 rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-300 hover:bg-emerald-400/20"><CheckCircle size={16} /> Aprobar</button>
+                      <button type="button" onClick={handleRejectBudget} className="flex items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm font-semibold text-red-300 hover:bg-red-400/20"><Ban size={16} /> Rechazar</button>
+                    </div>
+                  </div>
+                ) : <p className="text-sm text-slate-400">La orden está en <span className="font-semibold text-cyan-300">{newState}</span>. Los ítems aprobados se muestran abajo como servicios y repuestos realizados.</p>}
+              </section>
 
               {/* Información automática */}
               <div className="bg-slate-900/30 rounded-lg p-3 border border-slate-600">

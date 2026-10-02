@@ -65,6 +65,9 @@ export interface Order {
   precioFinal?: number;
   serviciosRealizados?: string[];
   repuestosUsados?: UsedPart[];
+  serviciosPresupuestados?: string[];
+  repuestosPresupuestados?: UsedPart[];
+  montoPresupuestado?: number;
 }
 
 // =====================================================
