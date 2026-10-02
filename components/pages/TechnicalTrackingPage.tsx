@@ -101,7 +101,9 @@ export default function TechnicalTrackingPage({ onBack }: TechnicalTrackingPageP
   const handleSendBudget = () => {
     if (!selectedOrder) return;
     const detail = [...budgetServices, ...budgetParts.map((part) => `${part.descripcion} x${part.cantidad}`)].join(', ') || 'Diagnóstico técnico';
-    const message = `Hola ${selectedOrder.nombre}! Te contactamos de JR Computación por tu equipo ${selectedOrder.marca} ${selectedOrder.modelo} (Orden #${selectedOrder.numeroOrden}). Diagnóstico: ${newObservation || selectedOrder.observaciones || selectedOrder.problemaReportado}. Presupuesto: ${detail}. Total: $${budgetTotal.toFixed(2)}. Por favor confirmanos si aprobás el trabajo.`;
+    const message = `Hola ${selectedOrder.nombre}! Te contactamos de JR Computación por tu equipo ${selectedOrder.marca} 
+    ${selectedOrder.modelo} Orden #${selectedOrder.numeroOrden}. Presupuesto: ${detail}. 
+      Total: $${budgetTotal.toFixed(2)}. Por favor confirmanos si aprobás el trabajo.`;
     window.open(`https://wa.me/${selectedOrder.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
   };
 
